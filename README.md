@@ -5,7 +5,7 @@
 MiniSOC traduce eventos técnicos de red (intentos fallidos de acceso, dispositivos desconocidos, puertos abiertos, tráfico inusual) en alertas con **semáforo de riesgo**, una explicación de *qué significa* y una lista de *qué hacer*. Es una sola página (`index.html`): sin servidor, sin instalación y sin dependencias. Todo el análisis ocurre **en el navegador**; nada se envía a ningún servidor.
 
 > Proyecto de **Ingeniería II** · Universidad Nacional Abierta y a Distancia (UNAD) · Escuela de Ciencias Básicas, Tecnología e Ingeniería (ECBTI).
-> Prototipo de laboratorio (nivel de madurez TRL 4) alineado con los **ODS 8 y 9** y con la línea de acción **Tecnológica / Económica–productiva** del OIR.
+> Prototipo de laboratorio alineado con los **ODS 8 y 9** y con la línea de acción **Tecnológica / Económica–productiva** del OIR.
 
 **Demo en línea:** 
 
