@@ -1,0 +1,4 @@
+PORT     STATE SERVICE
+22/tcp   open  ssh
+3389/tcp open  ms-wbt-server
+8080/tcp open  http-proxy
