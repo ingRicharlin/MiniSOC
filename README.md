@@ -7,7 +7,7 @@ MiniSOC traduce eventos técnicos de red (intentos fallidos de acceso, dispositi
 > Proyecto de **Ingeniería II** · Universidad Nacional Abierta y a Distancia (UNAD) · Escuela de Ciencias Básicas, Tecnología e Ingeniería (ECBTI).
 > Prototipo de laboratorio alineado con los **ODS 8 y 9** y con la línea de acción **Tecnológica / Económica–productiva** del OIR.
 
-**Demo en línea:** 
+**Demo en línea:**> https://ingricharlin.github.io/MiniSOC/ 
 
 ---
 
