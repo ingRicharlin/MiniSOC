@@ -1,0 +1,575 @@
+<<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>MiniSOC – Prototipo de alta fidelidad</title>
+  
+  <!-- Typography -->
+  <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+  
+  <style>
+    /* ==========================================
+       1. CSS VARIABLES & THEMING (Light / Dark)
+       ========================================== */
+    :root {
+      box-sizing: border-box;
+      padding-top: env(safe-area-inset-top, 0px);
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+      
+      /* Light Theme Colors */
+      --bg: #F2F5F4;
+      --sf: #fff;
+      --ink: #18232B;
+      --mu: #58666F;
+      --ln: #D5DCDF;
+      --br: #1F5C7A;
+      --bb: #E1EEF4;
+      --on: #fff;
+      
+      /* Alert Severity Colors (Light) */
+      --tx-a: #B3261E;
+      --tx-m: #8A5200;
+      --tx-b: #1B6E43;
+      --bg-a: #FBE5E2;
+      --bg-m: #FFF0D2;
+      --bg-b: #E0F3E8;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --bg: #10181D; --sf: #17232A; --ink: #E8EEF1; --mu: #9DADB6; --ln: #2A3A44;
+        --br: #7CC0DE; --bb: #1D3744; --on: #0E1A20;
+        --tx-a: #FF9C94; --tx-m: #F6C26B; --tx-b: #7FD6A4;
+        --bg-a: #3A1C1A; --bg-m: #3A2A0B; --bg-b: #10301F;
+      }
+    }
+
+    :root[data-theme="dark"] {
+      --bg: #10181D; --sf: #17232A; --ink: #E8EEF1; --mu: #9DADB6; --ln: #2A3A44;
+      --br: #7CC0DE; --bb: #1D3744; --on: #0E1A20;
+      --tx-a: #FF9C94; --tx-m: #F6C26B; --tx-b: #7FD6A4;
+      --bg-a: #3A1C1A; --bg-m: #3A2A0B; --bg-b: #10301F;
+    }
+
+    /* ==========================================
+       2. GLOBAL RESET & TYPOGRAPHY
+       ========================================== */
+    html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+    *, *::before, *::after { box-sizing: inherit; }
+    
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font: 400 1.05rem/1.55 "Atkinson Hyperlegible", system-ui, "Segoe UI", Roboto, sans-serif;
+    }
+
+    /* ==========================================
+       3. HEADER & NAVIGATION
+       ========================================== */
+    header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px 24px;
+      padding: 14px 24px;
+      background: var(--sf);
+      border-bottom: 1px solid var(--ln);
+    }
+    
+    .brand {
+      font-weight: 700;
+      font-size: 1.3rem;
+      color: var(--br);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .brand i {
+      width: 14px; height: 14px;
+      border-radius: 50%;
+      background: #3FA66B;
+      box-shadow: 16px 0 0 #F2A93B, 32px 0 0 #E5534B;
+      margin-right: 34px;
+    }
+    
+    nav { display: flex; gap: 4px; flex: 1; }
+    nav a { padding: 8px 14px; border-radius: 8px; color: var(--mu); text-decoration: none; font-weight: 700; }
+    nav a[aria-current=page] { background: var(--bb); color: var(--br); }
+
+    /* Language Switcher */
+    .lang { display: inline-flex; border: 1px solid var(--ln); border-radius: 999px; overflow: hidden; }
+    .lang button { border: 0; background: none; color: var(--mu); padding: 6px 16px; font: inherit; font-weight: 700; cursor: pointer; }
+    .lang button[aria-pressed=true] { background: var(--br); color: var(--on); }
+
+    /* ==========================================
+       4. LAYOUT & COMPONENTS
+       ========================================== */
+    main { max-width: 1040px; margin: 0 auto; padding: 28px 24px 56px; }
+    h1 { font-size: 1.8rem; line-height: 1.2; margin: 0 0 20px; letter-spacing: -.01em; }
+    h1:focus { outline: none; }
+    h2 { font-size: 1.15rem; margin: 0 0 8px; }
+
+    /* Status Widget */
+    .status {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 32px;
+      align-items: center;
+      padding: 26px 32px;
+      background: var(--sf);
+      border: 1px solid var(--ln);
+      border-radius: 24px;
+    }
+    
+    .signal { display: flex; flex-direction: column; gap: 12px; padding: 16px; background: #26343D; border-radius: 44px; }
+    .l { width: 38px; height: 38px; border-radius: 50%; background: #3C4D58; }
+    .l.on.a { background: #E5534B; box-shadow: 0 0 0 7px rgba(229,83,75,.28); }
+    .l.on.m { background: #F2A93B; box-shadow: 0 0 0 7px rgba(242,169,59,.28); }
+    .l.on.b { background: #3FA66B; box-shadow: 0 0 0 7px rgba(63,166,107,.28); }
+    
+    .status h2 { font-size: 1.7rem; margin: 0; }
+    .status p { margin: 4px 0 0; color: var(--mu); }
+    
+    .counts { display: flex; gap: 32px; margin-top: 16px; flex-wrap: wrap; }
+    .counts b { display: block; font-size: 2rem; line-height: 1.1; }
+    .counts .a b { color: var(--tx-a); }
+    .counts .m b { color: var(--tx-m); }
+    .counts .b b { color: var(--tx-b); }
+
+    /* Alerts List */
+    .sec { margin-top: 34px; }
+    .alerts { list-style: none; margin: 0; padding: 0; }
+    .alerts li {
+      display: grid;
+      grid-template-columns: 6px 1fr auto auto;
+      gap: 6px 16px;
+      align-items: center;
+      padding: 14px 0;
+      border-bottom: 1px solid var(--ln);
+    }
+    
+    .bar { align-self: stretch; border-radius: 3px; background: var(--mu); }
+    .bar.a { background: #E5534B; }
+    .bar.m { background: #F2A93B; }
+    .bar.b { background: #3FA66B; }
+    
+    .when { color: var(--mu); font-size: .92rem; display: block; }
+    
+    .badge { padding: 3px 12px; border-radius: 999px; font-size: .88rem; font-weight: 700; white-space: nowrap; }
+    .badge.a { background: var(--bg-a); color: var(--tx-a); }
+    .badge.m { background: var(--bg-m); color: var(--tx-m); }
+    .badge.b { background: var(--bg-b); color: var(--tx-b); }
+
+    /* Buttons & Controls */
+    .btn {
+      font: inherit; font-weight: 700;
+      border: 1px solid transparent; border-radius: 10px;
+      padding: 10px 18px; cursor: pointer;
+      background: var(--br); color: var(--on);
+    }
+    .btn.g { background: transparent; color: var(--ink); border-color: var(--ln); }
+    .btn.ok { background: #1B6E43; color: #fff; }
+    .btn:hover { filter: brightness(1.08); }
+    :focus-visible { outline: 3px solid var(--br); outline-offset: 2px; }
+
+    /* Details & Steps */
+    .crumb { color: var(--mu); font-size: .95rem; margin-bottom: 6px; }
+    .crumb a { color: var(--br); }
+    .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 36px; margin-top: 22px; }
+    .cols section { border-top: 4px solid var(--br); padding-top: 14px; }
+    
+    .steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+    .steps label { display: flex; gap: 12px; align-items: flex-start; cursor: pointer; }
+    .steps input { width: 22px; height: 22px; margin-top: 2px; accent-color: var(--br); }
+    .steps input:checked + span { text-decoration: line-through; color: var(--mu); }
+    
+    details { margin-top: 26px; padding: 12px 16px; background: var(--sf); border: 1px solid var(--ln); border-radius: 12px; color: var(--mu); }
+    summary { cursor: pointer; font-weight: 700; color: var(--ink); }
+    .acts { display: flex; gap: 12px; margin-top: 26px; flex-wrap: wrap; }
+
+    /* Tables & History */
+    .hist { display: grid; grid-template-columns: 1fr 300px; gap: 36px; align-items: start; }
+    .filters { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 14px; }
+    label.f { display: grid; gap: 4px; font-size: .9rem; color: var(--mu); }
+    
+    select, input[type=range] {
+      font: inherit; color: var(--ink); background: var(--sf);
+      border: 1px solid var(--ln); border-radius: 8px; padding: 8px 10px;
+    }
+    input[type=range] { padding: 0; width: 100%; accent-color: var(--br); }
+    
+    table { width: 100%; border-collapse: collapse; }
+    th { text-align: left; font-size: .9rem; color: var(--mu); padding: 8px 8px 8px 0; border-bottom: 2px solid var(--ln); }
+    td { padding: 11px 8px 11px 0; border-bottom: 1px solid var(--ln); }
+    td button { all: unset; cursor: pointer; color: var(--br); font-weight: 700; }
+    td button:focus-visible { outline: 3px solid var(--br); }
+
+    aside { background: var(--sf); border: 1px solid var(--ln); border-radius: 16px; padding: 20px; display: grid; gap: 18px; }
+    .sw { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+    .sw input { width: 44px; height: 24px; accent-color: var(--br); }
+
+    /* Toast Notification */
+    .toast {
+      position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+      transform: translateX(-50%); background: var(--ink); color: var(--bg);
+      padding: 12px 22px; border-radius: 12px; font-weight: 700;
+      opacity: 0; pointer-events: none; transition: opacity .2s; z-index: 1000;
+    }
+    .toast.show { opacity: 1; }
+
+    textarea {
+      width: 100%; min-height: 110px;
+      font: .9rem/1.4 ui-monospace, Consolas, monospace;
+      color: var(--ink); background: var(--sf);
+      border: 1px solid var(--ln); border-radius: 8px; padding: 10px;
+    }
+    .blk { margin-bottom: 22px; }
+    .blk > b { display: block; margin-bottom: 6px; }
+    .blk small { color: var(--mu); }
+    .chip { font-size: .85rem; color: var(--mu); border: 1px solid var(--ln); border-radius: 999px; padding: 4px 12px; }
+
+    /* Responsive Breakpoints */
+    @media (max-width: 760px) {
+      .status { grid-template-columns: 1fr; justify-items: start; }
+      .signal { flex-direction: row; border-radius: 44px; }
+      .cols, .hist { grid-template-columns: 1fr; }
+      .alerts li { grid-template-columns: 6px 1fr; }
+      .alerts li > .btn { grid-column: 2; justify-self: start; }
+      header { padding: 12px 16px; }
+      main { padding: 22px 16px 48px; }
+    }
+    @media (prefers-reduced-motion: reduce) { .toast { transition: none; } }
+  </style>
+</head>
+<body>
+
+  <!-- Header Section -->
+  <header>
+    <div class="brand"><i aria-hidden="true"></i>MiniSOC</div>
+    <nav id="nav" aria-label="Principal"></nav>
+    <span class="chip" id="mode"></span>
+    <div class="lang" role="group" aria-label="Idioma / Language">
+      <button data-act="lang" data-v="es" aria-pressed="true">ES</button>
+      <button data-act="lang" data-v="en" aria-pressed="false">EN</button>
+    </div>
+  </header>
+
+  <!-- Main Dynamic App Container -->
+  <main id="app"></main>
+  
+  <!-- Notification Toast -->
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <!-- JavaScript Logic -->
+  <script>
+    // ==========================================
+    // 5. LOCALIZATION DICTIONARIES (ES / EN)
+    // ==========================================
+    const UI = {
+      es: {
+        panel: "Panel", hist: "Historial", netState: "Estado de tu red", urgent: "Acción urgente", warn: "Atención", ok: "Todo en orden",
+        sUrgent: "Hay alertas altas que debes atender hoy.", sWarn: "Hay alertas medias por revisar.", sOk: "No hay alertas abiertas. Última revisión: hoy 10:42.",
+        Alto: "Alta", Medio: "Media", Bajo: "Baja", lv: { a: "Alto", m: "Medio", b: "Bajo" }, recent: "Alertas abiertas", live: "Tus datos analizados", demo: "Datos de ejemplo", nAn: "Analizar datos", aT: "Analiza tus propios datos", aH: "Pega o carga los datos de tu red de pruebas. Todo se procesa en tu navegador: nada se envía a ningún servidor.", lLog: "1. Inicios de sesión fallidos (log tipo sshd)", lArp: "2. Tabla ARP (comando arp -a o ip neigh)", lKn: "Dispositivos conocidos (una MAC por línea)", lPt: "3. Puertos abiertos (salida de netstat, ss o nmap)", lTr: "4. Tráfico medido en Mbit/s (opcional)", lRu: "Reglas de riesgo (JSON, editable)", bSm: "Cargar datos de ejemplo", bLn: "Usar los equipos del ARP como conocidos", bRun: "Analizar", mRun: "Análisis listo: {n} alertas", mErr: "Las reglas JSON no son válidas", mLn: "Equipos guardados como conocidos", fileL: "O cargar un archivo:", what: "¿Qué hago?", none: "No hay alertas abiertas. Buen trabajo.",
+        crumb: "Alertas", means: "¿Qué significa?", todo: "¿Qué debo hacer?", tech: "Datos técnicos (opcional)", done: "Marcar como atendida", ign: "Ignorar", back: "Volver al panel",
+        doneMsg: "Alerta marcada como atendida", ignMsg: "Alerta ignorada", histT: "Historial de alertas", fLv: "Nivel", fSt: "Estado", all: "Todos",
+        cDate: "Cuándo", cAl: "Alerta", cLv: "Nivel", cSt: "Estado", st: { new: "Nueva", done: "Atendida", ign: "Ignorada" }, cfg: "Configuración", cLang: "Idioma", sens: "Sensibilidad de alertas",
+        sL: "Baja", sM: "Media", sH: "Alta", mail: "Correo ante alertas altas", save: "Guardar cambios", saved: "Cambios guardados", empty: "Ninguna alerta coincide con los filtros.",
+        hA: "alta", hM: "media", hB: "baja", hAs: "altas", hMs: "medias", hBs: "bajas"
+      },
+      en: {
+        panel: "Dashboard", hist: "History", netState: "Your network status", urgent: "Action needed", warn: "Heads up", ok: "All clear",
+        sUrgent: "There are high-risk alerts you should handle today.", sWarn: "There are medium alerts to review.", sOk: "No open alerts. Last check: today 10:42.",
+        lv: { a: "High", m: "Medium", b: "Low" }, recent: "Open alerts", live: "Your analyzed data", demo: "Sample data", nAn: "Analyze data", aT: "Analyze your own data", aH: "Paste or upload data from your test network. Everything is processed in your browser: nothing is sent to any server.", lLog: "1. Failed sign-ins (sshd-style log)", lArp: "2. ARP table (arp -a or ip neigh command)", lKn: "Known devices (one MAC per line)", lPt: "3. Open ports (netstat, ss or nmap output)", lTr: "4. Measured traffic in Mbit/s (optional)", lRu: "Risk rules (JSON, editable)", bSm: "Load sample data", bLn: "Use ARP devices as known", bRun: "Analyze", mRun: "Analysis done: {n} alerts", mErr: "The JSON rules are not valid", mLn: "Devices saved as known", fileL: "Or upload a file:", what: "What should I do?", none: "No open alerts. Nice work.",
+        crumb: "Alerts", means: "What does it mean?", todo: "What should I do?", tech: "Technical details (optional)", done: "Mark as handled", ign: "Ignore", back: "Back to dashboard",
+        doneMsg: "Alert marked as handled", ignMsg: "Alert ignored", histT: "Alert history", fLv: "Level", fSt: "Status", all: "All",
+        cDate: "When", cAl: "Alert", cLv: "Level", cSt: "Status", st: { new: "New", done: "Handled", ign: "Ignored" }, cfg: "Settings", cLang: "Language", sens: "Alert sensitivity",
+        sL: "Low", sM: "Medium", sH: "High", mail: "Email me on high-risk alerts", save: "Save changes", saved: "Changes saved", empty: "No alerts match the filters.",
+        hA: "high", hM: "medium", hB: "low", hAs: "high", hMs: "medium", hBs: "low"
+      }
+    };
+
+    // Alert content definitions
+    const TY = {
+      device: {
+        es: { t: "Dispositivo desconocido conectado a tu red", m: "Un aparato que no conocemos se conectó a tu Wi-Fi. Puede ser el celular nuevo de un empleado o alguien que no debería estar ahí.", s: ["Revisa si el dispositivo es de alguien de tu equipo.", "Si no lo reconoces, cambia la contraseña del Wi-Fi.", "Marca la alerta como atendida."], x: "IP 192.168.1.47 · MAC A4:C3:F0:… · Fabricante: desconocido" },
+        en: { t: "Unknown device connected to your network", m: "A device we don’t recognize joined your Wi-Fi. It could be an employee’s new phone, or someone who shouldn’t be there.", s: ["Check whether the device belongs to someone on your team.", "If you don’t recognize it, change the Wi-Fi password.", "Mark the alert as handled."], x: "IP 192.168.1.47 · MAC A4:C3:F0:… · Vendor: unknown" }
+      },
+      login: {
+        es: { t: "{n} intentos fallidos de inicio de sesión", m: "Alguien intentó entrar a una cuenta con la contraseña equivocada varias veces seguidas. Puede ser un descuido o un intento de adivinar la clave.", s: ["Pregunta al dueño de la cuenta si fue él.", "Si no fue, cambia la contraseña de esa cuenta.", "Activa la verificación en dos pasos si está disponible."], x: "Cuenta: admin@tienda · Origen: 192.168.1.23" },
+        en: { t: "{n} failed sign-in attempts", m: "Someone tried to sign in to an account with the wrong password several times in a row. It could be a slip, or an attempt to guess the password.", s: ["Ask the account owner if it was them.", "If not, change that account’s password.", "Turn on two-step verification if it’s available."], x: "Account: admin@store · Source: 192.168.1.23" }
+      },
+      port: {
+        es: { t: "Puerto {n} abierto en un equipo", m: "Un equipo permite que otros se conecten a él desde fuera. Si no lo usas, es una puerta abierta sin necesidad.", s: ["Confirma si alguien usa ese servicio en el equipo.", "Si nadie lo usa, desactívalo en la configuración del equipo.", "Si no puedes, pide a tu proveedor de internet que cierre el puerto."], x: "Puerto 3389 (escritorio remoto) · Equipo: CAJA-01" },
+        en: { t: "Port {n} open on a computer", m: "A computer lets others connect to it from outside. If you don’t use it, it’s an unnecessary open door.", s: ["Confirm whether anyone uses that service on the computer.", "If no one does, turn it off in the computer’s settings.", "If you can’t, ask your internet provider to close the port."], x: "Port 3389 (remote desktop) · Computer: CAJA-01" }
+      },
+      traffic: {
+        es: { t: "Tráfico inusual hacia un destino desconocido", m: "Un equipo envió mucha más información de la normal a una dirección que no suele usar. Puede ser una copia de seguridad, o un programa malicioso.", s: ["Pregunta si alguien subió archivos grandes hoy.", "Si no, desconecta ese equipo de la red.", "Ejecuta el antivirus y vuelve a conectarlo cuando esté limpio."], x: "Destino: 203.0.113.9 · Volumen: 1,8 GB en 20 min" },
+        en: { t: "Unusual traffic to an unknown destination", m: "A computer sent far more data than usual to an address it doesn’t normally use. It could be a backup, or malicious software.", s: ["Ask whether anyone uploaded large files today.", "If not, disconnect that computer from the network.", "Run the antivirus and reconnect it once it’s clean."], x: "Destination: 203.0.113.9 · Volume: 1.8 GB in 20 min" }
+      }
+    };
+
+    // ==========================================
+    // 6. INITIAL STATE & SAMPLE DATA
+    // ==========================================
+    const SAMPLE = [
+      { id: 1, ty: "device", lv: "a", st: "new", w: ["Hace 12 min", "12 min ago"] },
+      { id: 2, ty: "login", lv: "m", st: "new", n: 5, w: ["Hace 1 h", "1 h ago"] },
+      { id: 3, ty: "port", lv: "m", st: "new", n: 3389, w: ["Hace 3 h", "3 h ago"] },
+      { id: 4, ty: "traffic", lv: "m", st: "new", w: ["Hoy 08:15", "Today 08:15"] },
+      { id: 5, ty: "login", lv: "b", st: "new", n: 2, w: ["Ayer", "Yesterday"] },
+      { id: 6, ty: "device", lv: "b", st: "done", w: ["Ayer", "Yesterday"] },
+      { id: 7, ty: "port", lv: "m", st: "done", n: 3389, w: ["Hace 2 días", "2 days ago"] },
+      { id: 8, ty: "traffic", lv: "b", st: "ign", w: ["Hace 3 días", "3 days ago"] }
+    ];
+
+    let A = JSON.parse(JSON.stringify(SAMPLE)), live = false;
+    const O = { a: 0, m: 1, b: 2 };
+    let lang = "es", sel = 1, fl = "all", fs = "all", sens = 2, mail = true;
+
+    // Helper utilities
+    const u = () => UI[lang], li = () => lang === "es" ? 0 : 1;
+    const ty = a => TY[a.ty][lang], ttl = a => ty(a).t.replace("{n}", a.n || "");
+    const $ = s => document.querySelector(s), app = $("#app");
+    const badge = l => `<span class="badge ${l}">${u().lv[l]}</span>`;
+
+    function toast(m) {
+      const t = $("#toast");
+      t.textContent = m;
+      t.classList.add("show");
+      clearTimeout(toast.k);
+      toast.k = setTimeout(() => t.classList.remove("show"), 2200);
+    }
+
+    // ==========================================
+    // 7. VIEWS / RENDER FUNCTIONS
+    // ==========================================
+    function panel() {
+      const o = A.filter(a => a.st === "new").sort((x, y) => O[x.lv] - O[y.lv]);
+      const c = { a: 0, m: 0, b: 0 };
+      o.forEach(a => c[a.lv]++);
+      const w = c.a ? "a" : c.m ? "m" : "b", L = u(), head = c.a ? L.urgent : c.m ? L.warn : L.ok, sub = c.a ? L.sUrgent : c.m ? L.sWarn : L.sOk;
+      
+      return `
+        <h1 tabindex="-1">${L.netState}</h1>
+        <div class="status">
+          <div class="signal" aria-hidden="true">
+            <span class="l ${w === "a" ? "on a" : ""}" style="${w === "a" ? "" : "opacity:.9"}"></span>
+            <span class="l ${w === "m" ? "on m" : ""}"></span>
+            <span class="l ${w === "b" ? "on b" : ""}"></span>
+          </div>
+          <div>
+            <h2>${head}</h2>
+            <p>${sub}</p>
+            <div class="counts">
+              <div class="a"><b>${c.a}</b>${L.lv.a}</div>
+              <div class="m"><b>${c.m}</b>${L.lv.m}</div>
+              <div class="b"><b>${c.b}</b>${L.lv.b}</div>
+            </div>
+          </div>
+        </div>
+        <div class="sec">
+          <h2>${L.recent}</h2>
+          ${o.length ? `<ul class="alerts">${o.map(a => `<li><span class="bar ${a.lv}"></span><div>${ttl(a)}<span class="when">${a.w[li()]}</span></div>${badge(a.lv)}<button class="btn" data-act="open" data-id="${a.id}">${L.what}</button></li>`).join("")}</ul>` : `<p>${L.none}</p>`}
+        </div>`;
+    }
+
+    function detail() {
+      const a = A.find(x => x.id === sel) || A[0], d = ty(a), L = u();
+      return `
+        <div class="crumb"><a href="#panel">${L.crumb}</a> › ${ttl(a)}</div>
+        <h1 tabindex="-1">${ttl(a)}</h1>
+        <div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap">${badge(a.lv)}<span class="when">${a.w[li()]} · ${L.st[a.st]}</span></div>
+        <div class="cols">
+          <section><h2>${L.means}</h2><p>${d.m}</p></section>
+          <section><h2>${L.todo}</h2><ul class="steps">${d.s.map(s => `<li><label><input type="checkbox"><span>${s}</span></label></li>`).join("")}</ul></section>
+        </div>
+        <details><summary>${L.tech}</summary><p>${a.x || d.x}</p></details>
+        <div class="acts">
+          <button class="btn ok" data-act="done">${L.done}</button>
+          <button class="btn g" data-act="ign">${L.ign}</button>
+          <button class="btn g" data-act="back">${L.back}</button>
+        </div>`;
+    }
+
+    function hist() {
+      const L = u(), r = A.filter(a => (fl === "all" || a.lv === fl) && (fs === "all" || a.st === fs));
+      const sm = ["sL", "sM", "sH"][sens - 1];
+      return `
+        <h1 tabindex="-1">${L.histT}</h1>
+        <div class="hist">
+          <div>
+            <div class="filters">
+              <label class="f">${L.fLv}<select data-f="l"><option value="all">${L.all}</option>${["a", "m", "b"].map(k => `<option value="${k}" ${fl === k ? "selected" : ""}>${L.lv[k]}</option>`).join("")}</select></label>
+              <label class="f">${L.fSt}<select data-f="s"><option value="all">${L.all}</option>${["new", "done", "ign"].map(k => `<option value="${k}" ${fs === k ? "selected" : ""}>${L.st[k]}</option>`).join("")}</select></label>
+            </div>
+            ${r.length ? `<table><thead><tr><th>${L.cDate}</th><th>${L.cAl}</th><th>${L.cLv}</th><th>${L.cSt}</th></tr></thead><tbody>${r.map(a => `<tr><td>${a.w[li()]}</td><td><button data-act="open" data-id="${a.id}">${ttl(a)}</button></td><td>${badge(a.lv)}</td><td>${L.st[a.st]}</td></tr>`).join("")}</tbody></table>` : `<p>${L.empty}</p>`}
+          </div>
+          <aside>
+            <h2>${L.cfg}</h2>
+            <label class="f">${L.cLang}<select data-f="g"><option value="es" ${lang === "es" ? "selected" : ""}>Español</option><option value="en" ${lang === "en" ? "selected" : ""}>English</option></select></label>
+            <label class="f">${L.sens}: <b style="color:var(--ink)">${L[sm]}</b><input type="range" min="1" max="3" value="${sens}" data-f="r"></label>
+            <div class="sw"><label for="ml">${L.mail}</label><input id="ml" type="checkbox" data-f="m" ${mail ? "checked" : ""}></div>
+            <button class="btn" data-act="save">${L.save}</button>
+          </aside>
+        </div>`;
+    }
+
+    // Analyzer configuration
+    const RULES = {
+      login_fallidos: { bajo: 2, medio: 3, alto: 10 },
+      trafico_mbps: { medio: 10, alto: 50 },
+      dispositivo_desconocido: "alto",
+      puertos_riesgosos: {
+        "21": { servicio: "FTP", nivel: "medio" },
+        "23": { servicio: "Telnet", nivel: "alto" },
+        "445": { servicio: "SMB (archivos compartidos)", nivel: "alto" },
+        "3306": { servicio: "MySQL", nivel: "medio" },
+        "3389": { servicio: "Escritorio remoto", nivel: "alto" },
+        "5900": { servicio: "VNC", nivel: "medio" },
+        "8080": { servicio: "Servidor web alterno", nivel: "bajo" }
+      }
+    };
+    const L2 = { alto: "a", medio: "m", bajo: "b" };
+    const ls = () => { try { return JSON.parse(localStorage.getItem("minisoc_st") || "{}") } catch (e) { return {} } };
+    const rep = (n, f) => Array.from({ length: n }, (_, i) => f(i));
+    const SMP = {
+      log: [...rep(5, i => `Oct 12 08:1${i}:02 srv sshd[1201]: Failed password for admin from 192.168.1.23 port 5120${i} ssh2`), ...rep(2, i => `Oct 12 09:0${i}:11 srv sshd[1302]: Failed password for caja from 192.168.1.40 port 6130${i} ssh2`), ...rep(12, i => `Oct 12 10:${String(i).padStart(2, "0")}:45 srv sshd[1403]: Failed password for invalid user root from 203.0.113.9 port 7140${i % 10} ssh2`)].join("\n"),
+      arp: "  192.168.1.1     a4-c3-f0-00-00-01   dinámico\n  192.168.1.23    a4-c3-f0-00-00-02   dinámico\n  192.168.1.40    a4-c3-f0-00-00-03   dinámico\n  192.168.1.47    b8-27-eb-aa-bb-cc   dinámico",
+      known: "a4:c3:f0:00:00:01\na4:c3:f0:00:00:02\na4:c3:f0:00:00:03",
+      ports: "PORT    STATE SERVICE\n22/tcp  open  ssh\n3389/tcp open  ms-wbt-server\n8080/tcp open  http-proxy",
+      tr: "12"
+    };
+    const D = { log: "", arp: "", known: (() => { try { return localStorage.getItem("minisoc_known") || "" } catch (e) { return "" } })(), ports: "", tr: "", rules: JSON.stringify(RULES, null, 2) };
+    const esc = t => String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;");
+    const lvl = (v, t) => v >= t.alto ? "a" : v >= t.medio ? "m" : v >= (t.bajo ?? 1) ? "b" : null;
+    const hash = s => { let h = 0; for (const c of s) h = (h * 31 + c.charCodeAt(0)) >>> 0; return h };
+
+    function arp(t) {
+      const r = [];
+      for (const l of t.split(/\r?\n/)) {
+        const m = l.match(/(\d{1,3}(?:\.\d{1,3}){3}).*?((?:[0-9a-fA-F]{1,2}[:-]){5}[0-9a-fA-F]{1,2})/);
+        if (!m) continue;
+        const ip = m[1], mac = m[2].toLowerCase().replace(/-/g, ":");
+        if (/^(224|239|255)\./.test(ip) || ip.endsWith(".255") || mac === "ff:ff:ff:ff:ff:ff") continue;
+        r.push([ip, mac]);
+      }
+      return r;
+    }
+    const arpMacs = t => [...new Set(arp(t).map(x => x[1]))];
+
+    function analyze() {
+      const L = u(), ta = (k, r) => `<textarea data-d="${k}" rows="${r}">${esc(D[k])}</textarea>`, fi = k => `<small>${L.fileL} <input type="file" data-fi="${k}" accept=".log,.txt,.csv"></small>`;
+      return `
+        <h1 tabindex="-1">${L.aT}</h1><p>${L.aH}</p>
+        <div class="acts" style="margin:0 0 22px"><button class="btn g" data-act="sample">${L.bSm}</button></div>
+        <div class="blk"><b>${L.lLog}</b>${ta("log", 5)}${fi("log")}</div>
+        <div class="blk"><b>${L.lArp}</b>${ta("arp", 4)}${fi("arp")}<b style="margin-top:12px">${L.lKn}</b>${ta("known", 3)}<button class="btn g" style="margin-top:8px" data-act="learn">${L.bLn}</button></div>
+        <div class="blk"><b>${L.lPt}</b>${ta("ports", 4)}${fi("ports")}</div>
+        <div class="blk"><b>${L.lTr}</b><input data-d="tr" value="${esc(D.tr)}" inputmode="decimal" style="font:inherit;padding:8px 10px;border:1px solid var(--ln);border-radius:8px;background:var(--sf);color:var(--ink);width:140px"></div>
+        <details><summary>${L.lRu}</summary>${ta("rules", 12)}</details>
+        <div class="acts"><button class="btn" data-act="run">${L.bRun}</button></div>`;
+    }
+
+    function run() {
+      let R;
+      try { R = JSON.parse(D.rules) } catch (e) { toast(u().mErr); return }
+      try { localStorage.setItem("minisoc_known", D.known) } catch (e) { }
+      const st = ls(), out = [], hh = new Date().toTimeString().slice(0, 5), w = ["Analizado " + hh, "Analyzed " + hh];
+      const add = (ty, lv, fp, n, x) => { if (lv) out.push({ id: hash(fp), fp, ty, lv, st: st[fp] || "new", n, x, w }) };
+      
+      const c = {}, us = {};
+      for (const l of D.log.split(/\r?\n/)) {
+        const m = l.match(/Failed password for (?:invalid user )?(\S+) from (\d{1,3}(?:\.\d{1,3}){3})/), p = l.match(/authentication failure.*?rhost=(\d{1,3}(?:\.\d{1,3}){3})(?:.*?user=(\S+))?/), ip = m ? m[2] : p ? p[1] : null;
+        if (ip) { c[ip] = (c[ip] || 0) + 1; us[ip] = m ? m[1] : (p[2] || "?") }
+      }
+      for (const ip in c) add("login", lvl(c[ip], R.login_fallidos), "login:" + ip, c[ip], `Cuenta/Account: ${us[ip]} · IP: ${ip}`);
+      
+      const kn = new Set(D.known.toLowerCase().split(/[\s,;]+/).filter(Boolean));
+      if (kn.size) for (const [ip, mac] of arp(D.arp)) if (!kn.has(mac)) add("device", L2[R.dispositivo_desconocido], "device:" + mac, null, `IP: ${ip} · MAC: ${mac}`);
+      
+      const ps = new Set();
+      for (const l of D.ports.split(/\r?\n/)) {
+        let m = l.match(/^\s*(\d{1,5})\/tcp\s+open/i);
+        if (!m && /LISTEN/i.test(l)) m = l.match(/(?:\d{1,3}(?:\.\d{1,3}){3}|\[?::\]?|\*):(\d{1,5})\b/);
+        if (m) ps.add(m[1]);
+      }
+      for (const p of ps) { const r = R.puertos_riesgosos[p]; if (r) add("port", L2[r.nivel], "port:" + p, +p, `Puerto/Port ${p} (${r.servicio})`) }
+      
+      const mb = parseFloat(D.tr);
+      if (!isNaN(mb)) { const t = R.trafico_mbps; add("traffic", lvl(mb, { bajo: t.medio, medio: t.medio, alto: t.alto }), "traffic:global", null, `Volumen/Volume: ${mb} Mbit/s`) }
+      
+      out.sort((a, b) => O[a.lv] - O[b.lv]);
+      A = out; live = true; toast(u().mRun.replace("{n}", out.length)); go("panel");
+    }
+
+    function render() {
+      const h = (location.hash || "#panel").slice(1);
+      const v = ["panel", "alerta", "historial", "analizar"].includes(h) ? h : "panel";
+      const L = u();
+      
+      $("#nav").innerHTML = `
+        <a href="#panel" ${v === "panel" || v === "alerta" ? 'aria-current="page"' : ""}>${L.panel}</a>
+        <a href="#historial" ${v === "historial" ? 'aria-current="page"' : ""}>${L.hist}</a>
+        <a href="#analizar" ${v === "analizar" ? 'aria-current="page"' : ""}>${L.nAn}</a>`;
+      
+      app.innerHTML = v === "panel" ? panel() : v === "alerta" ? detail() : v === "analizar" ? analyze() : hist();
+      document.documentElement.lang = lang;
+      $("#mode").textContent = live ? u().live : u().demo;
+      document.querySelectorAll(".lang button").forEach(b => b.setAttribute("aria-pressed", b.dataset.v === lang));
+    }
+
+    function go(v) { if (location.hash === "#" + v) render(); else location.hash = v }
+
+    // ==========================================
+    // 8. EVENT LISTENERS
+    // ==========================================
+    document.addEventListener("click", e => {
+      const b = e.target.closest("[data-act]");
+      if (!b) return;
+      const k = b.dataset.act;
+      if (k === "lang") { lang = b.dataset.v; render() }
+      else if (k === "open") { sel = +b.dataset.id; go("alerta") }
+      else if (k === "done") { A.find(x => x.id === sel).st = "done"; post("done"); toast(u().doneMsg); go("panel") }
+      else if (k === "ign") { A.find(x => x.id === sel).st = "ign"; post("ign"); toast(u().ignMsg); go("panel") }
+      else if (k === "back") go("panel");
+      else if (k === "sample") { Object.assign(D, SMP); render() }
+      else if (k === "learn") { D.known = arpMacs(D.arp).join("\n"); render(); toast(u().mLn) }
+      else if (k === "run") run();
+      else if (k === "save") toast(u().saved);
+    });
+
+    document.addEventListener("change", e => {
+      if (e.target.dataset.fi) {
+        const fr = new FileReader(), k = e.target.dataset.fi;
+        fr.onload = () => { D[k] = fr.result; render() };
+        fr.readAsText(e.target.files[0]);
+        return;
+      }
+      const f = e.target.dataset.f;
+      if (!f) return;
+      if (f === "l") fl = e.target.value;
+      else if (f === "s") fs = e.target.value;
+      else if (f === "g") lang = e.target.value;
+      else if (f === "m") mail = e.target.checked;
+      if (f !== "m") render();
+    });
+
+    document.addEventListener("input", e => {
+      if (e.target.dataset.d) { D[e.target.dataset.d] = e.target.value; return }
+      if (e.target.dataset.f === "r") {
+        sens = +e.target.value;
+        const x = document.querySelector("aside label.f:nth-of-type(2) b");
+        if (x) x.textContent = u()[["sL", "sM", "sH"][sens - 1]];
+      }
+    });
+
+    window.addEventListener("hashchange", () => { render(); const h = app.querySelector("h1"); if (h) h.focus() });
+
+    // Initial render call
+    render();
+  </script>
+</body>
+</html>
